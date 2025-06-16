@@ -46,7 +46,14 @@ const authController = {
       const payload = { id: user.id, username: user.username };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-      res.json({ message: 'Login berhasil', token });
+      res.cookie('token', token, {
+        httpOnly: true,         // tidak bisa diakses JS client
+        secure: process.env.NODE_ENV === 'production', // hanya HTTPS di prod
+        sameSite: "strict", // CSRF attacks cross-site request forgery attacks
+        maxAge: 1000 * 60 * 60, // 1 jam, sama dengan expiresIn
+      });
+
+      res.json({ message: 'Login berhasil', user: { id: user.id, username: user.username } });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

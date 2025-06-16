@@ -4,19 +4,34 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'defaultsecret';
 
 function authenticateToken(req, res, next) {
-  const token = req.cookies && req.cookies.token;
+  // 1. Ambil token dari cookie
+  const token = req.cookies?.token;
 
+  // 2. Jika tidak ada, tolak akses
   if (!token) {
-    return res.status(401).json({ message: 'Token tidak ditemukan, silakan login' });
+    return res
+      .status(401)
+      .json({ message: 'Token tidak ditemukan, silakan login.' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: 'Token tidak valid atau kadaluarsa' });
-    }
+  try {
+    // 3. Verifikasi token (synchronous)
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // 4. Lampirkan payload ke req.user
     req.user = decoded;
-    next();
-  });
+    return next();
+  } catch (err) {
+    // 5. Jika token tidak valid atau kadaluarsa: hapus cookie & tolak akses
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: "strict", // CSRF attacks cross-site request forgery attacks
+    });
+    return res
+      .status(403)
+      .json({ message: 'Token tidak valid atau sudah kadaluarsa.' });
+  }
 }
 
 export default authenticateToken;
