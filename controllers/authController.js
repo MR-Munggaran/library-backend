@@ -48,8 +48,8 @@ const authController = {
 
       res.cookie('token', token, {
         httpOnly: true,         // tidak bisa diakses JS client
-        secure: process.env.NODE_ENV === 'production', // hanya HTTPS di prod
-        sameSite: "strict", // CSRF attacks cross-site request forgery attacks
+        secure: false, // hanya HTTPS di prod
+        sameSite: "lax", // CSRF attacks cross-site request forgery attacks
         maxAge: 1000 * 60 * 60, // 1 jam, sama dengan expiresIn
       });
 
@@ -66,6 +66,15 @@ const authController = {
       secure: false,
     });
     res.json({ message: 'Logout berhasil, cookie token dihapus' });
+  },
+
+  me: (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // bisa ambil data user dari database jika perlu, misalnya:
+    res.json({ user: req.user });
   }
 };
 
